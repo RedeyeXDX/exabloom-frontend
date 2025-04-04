@@ -1,4 +1,4 @@
-import { getBezierPath } from "reactflow";
+import { getBezierPath } from "@xyflow/react";
 
 const foreignObjectSize = 40;
 
@@ -36,7 +36,7 @@ const AddEdge = ({
         requiredExtensions="http://www.w3.org/1999/xhtml"
       >
         <div
-          className="w-full h-full flex items-center justify-center bg-white border border-gray-300 rounded-full shadow-lg text-xl font-bold text-gray-700 hover:bg-gray-100 cursor-pointer"
+          className="w-full h-full flex items-center justify-center rounded-full shadow-lg text-xl font-bold text-gray-700 hover:bg-gray-100 cursor-pointer"
           onClick={data?.onAdd}
         >
           +

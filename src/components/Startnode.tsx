@@ -1,8 +1,8 @@
-import { Handle, Position } from "reactflow";
+import { Handle, Position } from "@xyflow/react";
 
 const StartNode = () => {
   return (
-    <div className="bg-green-100 text-green-800 font-semibold px-4 py-2 rounded-md shadow-md text-sm">
+    <div className="bg-green-100 text-black font-semibold px-4 py-2 rounded-md shadow-md text-sm">
       Start
       <Handle
         type="source"
