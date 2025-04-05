@@ -16,24 +16,29 @@ import StartNode from "./Startnode";
 import EndNode from "./Endnode";
 import ActionNode from "./ActionNode";
 import EditNodeModal from "./EditNodeModal";
+import { addNodeBetweenEdgeHelper } from "./addNodeBetweenEdgeHelper";
+import NodeTypeSelectorModal from "./NodeTypeSelectorModal";
+import IfElseNode from "./IfElseNode";
+import BranchLabelNode from "./BranchLabelNode";
+import IfElseNodeModal from "./IfElseNodeModal";
+import { addIfElseStructure } from "./addIfElseStructure";
 
 type NodeData = {
   label: string;
 };
 
-// Custom edge types
 const edgeTypes = {
   add: AddEdge,
 };
 
-// Node types for rendering
 const nodeTypes = {
   start: StartNode,
   end: EndNode,
   action: ActionNode,
+  ifelse: IfElseNode,
+  branchlabel: BranchLabelNode,
 };
 
-// Initial nodes
 const initialNodes = [
   {
     id: "1",
@@ -60,85 +65,62 @@ export default function WorkflowBuilder() {
       type: "add",
       animated: true,
       data: {
-        onAdd: () => addNodeBetweenEdge("1", "2"),
+        onAdd: (e: React.MouseEvent) => {
+          const bounds = (e.target as HTMLElement).getBoundingClientRect();
+          setSelectorPosition({ x: bounds.left, y: bounds.top });
+          setEdgeToSplit({ source: "1", target: "2" });
+        },
       },
     },
   ]);
+
+  const [edgeToSplit, setEdgeToSplit] = useState<{
+    source: string;
+    target: string;
+  } | null>(null);
+  const [selectorPosition, setSelectorPosition] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
   const [selectedNode, setSelectedNode] = useState<Node<NodeData> | null>(null);
+
+  const [showIfElseModal, setShowIfElseModal] = useState(false);
+  const [stagedEdge, setStagedEdge] = useState<{
+    source: string;
+    target: string;
+  } | null>(null);
+
+  const openIfElseEditModal = (nodeId: string) => {
+    // Optional: hook to edit if/else node later
+  };
 
   const onConnect = useCallback(
     (params: any) => setEdges((eds) => addEdge(params, eds)),
     [setEdges]
   );
 
-  const addNodeBetweenEdge = useCallback((source: string, target: string) => {
-    setNodes((prevNodes) => {
-      const sourceNode = prevNodes.find((n) => n.id === source);
-      const targetNode = prevNodes.find((n) => n.id === target);
-      if (!sourceNode || !targetNode) return prevNodes;
+  const handleNodeTypeSelection = (type: "action" | "ifelse") => {
+    if (!edgeToSplit) return;
 
-      const midY =
-        sourceNode.position.y +
-        (targetNode.position.y - sourceNode.position.y) / 2;
-
-      const avgX =
-        sourceNode.position.x +
-        (targetNode.position.x - sourceNode.position.x) / 2;
-
-      const id = crypto.randomUUID();
-      const newNode: Node<NodeData> = {
-        id,
-        type: "action",
-        position: { x: avgX, y: midY },
-        data: {
-          label: `Action`,
-        },
-      };
-
-      const updatedNodes = prevNodes.map((node) => {
-        if (node.position.y > midY) {
-          return {
-            ...node,
-            position: { ...node.position, y: node.position.y + 100 },
-          };
-        }
-        return node;
-      });
-
-      setEdges((prevEdges) => {
-        const filteredEdges = prevEdges.filter(
-          (e) => !(e.source === source && e.target === target)
-        );
-
-        const newEdges: Edge[] = [
-          {
-            id: `e-${source}-${id}`,
-            source,
-            target: id,
-            type: "add",
-            animated: true,
-            data: {
-              onAdd: () => addNodeBetweenEdge(source, id),
-            },
-          },
-          {
-            id: `e-${id}-${target}`,
-            source: id,
-            target,
-            type: "add",
-            animated: true,
-            data: {
-              onAdd: () => addNodeBetweenEdge(id, target),
-            },
-          },
-        ];
-
-        return [...filteredEdges, ...newEdges];
-      });
-
-      return [...updatedNodes, newNode];
-    });
-  }, []);
+    if (type === "action") {
+      addNodeBetweenEdgeHelper(
+        edgeToSplit.source,
+        edgeToSplit.target,
+        nodes,
+        setNodes,
+        setEdges,
+        type,
+        setSelectorPosition,
+        setEdgeToSplit
+      );
+      setEdgeToSplit(null);
+      setSelectorPosition(null);
+    } else if (type === "ifelse") {
+      setShowIfElseModal(true);
+      setStagedEdge(edgeToSplit);
+      setSelectorPosition(null);
+    }
+  };
 
   return (
     <>
@@ -161,6 +143,7 @@ export default function WorkflowBuilder() {
           <MiniMap />
           <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
         </ReactFlow>
+
         {selectedNode && (
           <EditNodeModal
             node={selectedNode}
@@ -176,6 +159,38 @@ export default function WorkflowBuilder() {
               );
             }}
             onClose={() => setSelectedNode(null)}
+          />
+        )}
+
+        {selectorPosition && (
+          <NodeTypeSelectorModal
+            position={selectorPosition}
+            onSelect={handleNodeTypeSelection}
+            onClose={() => setSelectorPosition(null)}
+          />
+        )}
+
+        {showIfElseModal && stagedEdge && (
+          <IfElseNodeModal
+            onSave={(modalData) => {
+              addIfElseStructure(
+                stagedEdge.source,
+                stagedEdge.target,
+                modalData,
+                nodes,
+                setNodes,
+                setEdges,
+                setSelectorPosition,
+                setEdgeToSplit,
+                openIfElseEditModal
+              );
+              setShowIfElseModal(false);
+              setStagedEdge(null);
+            }}
+            onClose={() => {
+              setShowIfElseModal(false);
+              setStagedEdge(null);
+            }}
           />
         )}
       </div>

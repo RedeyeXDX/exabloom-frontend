@@ -37,7 +37,7 @@ const AddEdge = ({
       >
         <div
           className="w-full h-full flex items-center justify-center rounded-full shadow-lg text-xl font-bold text-gray-700 hover:bg-gray-100 cursor-pointer"
-          onClick={data?.onAdd}
+          onClick={(e) => data?.onAdd?.(e)}
         >
           +
         </div>
